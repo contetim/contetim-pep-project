@@ -59,12 +59,19 @@ public class SocialMediaController {
 
         // Create message
         app.post("/messages", ctx -> {
-            Message message = ctx.bodyAsClass(Message.class);
-            Message newMessage = messageService.createMessage(message);
-            if (newMessage != null) {
-                ctx.json(newMessage);
-            } else {
-                ctx.status(400);
+            try {
+                Message message = ctx.bodyAsClass(Message.class);
+                Message createdMessage = messageService.createMessage(message);
+        
+                if (createdMessage == null) {
+                    ctx.status(400); // Bad request if validation or creation fails;
+                } else {
+                    ctx.status(200); // Success
+                    ctx.json(createdMessage); // Return created message
+                }
+            } catch (Exception e) {
+                e.printStackTrace(); // Print stack trace for debugging
+                ctx.status(500).result("Internal server error");
             }
         });
 

@@ -13,19 +13,27 @@ public class MessageDAO {
     }
 
     public Message createMessage(Message message) throws SQLException {
-        String sql = "INSERT INTO message (posted_by, message_text, time_posted_epoch) VALUES (?, ?, ?)";
-        PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-        statement.setInt(1, message.getPosted_by()); // Foreign key reference to account_id
-        statement.setString(2, message.getMessage_text());
-        statement.setLong(3, message.getTime_posted_epoch());
-        int rows = statement.executeUpdate();
+        if (connection == null) {
+            throw new SQLException("Database connection is not established.");
+        }
 
-        if (rows > 0) {
-            ResultSet keys = statement.getGeneratedKeys();
-            if (keys.next()) {
-                message.setMessage_id(keys.getInt(1)); // Auto-incremented ID
-                return message;
+        String sql = "INSERT INTO message (posted_by, message_text, time_posted_epoch) VALUES (?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setInt(1, message.getPosted_by());
+            statement.setString(2, message.getMessage_text());
+            statement.setLong(3, message.getTime_posted_epoch());
+            
+            int rows = statement.executeUpdate();
+            if (rows > 0) {
+                ResultSet keys = statement.getGeneratedKeys();
+                if (keys.next()) {
+                    message.setMessage_id(keys.getInt(1));
+                    return message;
+                }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();  // Log the exception for debugging
+            throw new SQLException("Error occurred while inserting message.", e);
         }
         return null; // Return null if insertion fails
     }

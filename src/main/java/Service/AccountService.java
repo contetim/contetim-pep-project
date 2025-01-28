@@ -21,4 +21,8 @@ public class AccountService {
     public Account login(String username, String password) throws SQLException {
         return accountDAO.getAccountByUsernameAndPassword(username, password);
     }
+
+    public boolean doesAccountExist (int accountId){
+        return accountDAO.getAccountById(accountId) != null;
+    }
 }
