@@ -1,7 +1,8 @@
 package Service;
 
-import DAO.MessageDAO;
 import Model.Message;
+import DAO.MessageDAO;
+
 import java.sql.SQLException;
 import java.util.List;
 

@@ -1,9 +1,9 @@
 package DAO;
 
-import Model.Message;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import Model.Message;
 
 public class MessageDAO {
     private final Connection connection;
