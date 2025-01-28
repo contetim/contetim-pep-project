@@ -1,6 +1,8 @@
 package Controller;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+
 import Model.*;
 import Service.*;
 import Util.ConnectionUtil;
@@ -34,96 +36,14 @@ public class SocialMediaController {
 
         //all endpoint handlers (specific handler defined in each method call parameter)
         app.get("/example-endpoint", this::exampleHandler);
-        
-        // Register account
-        app.post("/register", ctx -> {
-            Account account = ctx.bodyAsClass(Account.class);
-            Account newAccount = accountService.createAccount(account);
-            if (newAccount != null) {
-                ctx.json(newAccount);
-            } else {
-                ctx.status(400);
-            }
-        });
-
-        // Login
-        app.post("/login", ctx -> {
-            Account loginRequest = ctx.bodyAsClass(Account.class);
-            Account account = accountService.login(loginRequest.getUsername(), loginRequest.getPassword());
-            if (account != null) {
-                ctx.json(account);
-            } else {
-                ctx.status(401);
-            }
-        });
-
-        // Create message
-        app.post("/messages", ctx -> {
-            try {
-                Message message = ctx.bodyAsClass(Message.class);
-                Message createdMessage = messageService.createMessage(message);
-        
-                if (createdMessage == null) {
-                    ctx.status(400); // Bad request if validation or creation fails;
-                } else {
-                    ctx.status(200); // Success
-                    ctx.json(createdMessage); // Return created message
-                }
-            } catch (Exception e) {
-                e.printStackTrace(); // Print stack trace for debugging
-                ctx.status(500).result("Internal server error");
-            }
-        });
-
-        // Get all messages
-        app.get("/messages", ctx -> {
-            ctx.json(messageService.getAllMessages());
-        });
-
-        // Get message by ID
-        app.get("/messages/{message_id}", ctx -> {
-            int messageId = Integer.parseInt(ctx.pathParam("message_id"));
-            Message message = messageService.getMessageById(messageId);
-            if (message != null) {
-                ctx.json(message);
-            } else {
-                ctx.status(404).json("");
-            }
-        });
-
-        // Delete message
-        app.delete("/messages/{message_id}", ctx -> {
-            int messageId = Integer.parseInt(ctx.pathParam("message_id"));
-            Message deletedMessage = messageService.getMessageById(messageId);
-            if (deletedMessage != null && messageService.deleteMessage(messageId)) {
-                ctx.json(deletedMessage);
-            } else {
-                ctx.json("");
-            }
-        });
-
-        // Update message
-        app.patch("/messages/{message_id}", ctx -> {
-            int messageId = Integer.parseInt(ctx.pathParam("message_id"));
-            Message existingMessage = messageService.getMessageById(messageId);
-            if (existingMessage != null) {
-                String newText = ctx.bodyAsClass(Message.class).getMessage_text();
-                if (messageService.updateMessage(messageId, newText)) {
-                    existingMessage.setMessage_text(newText);
-                    ctx.json(existingMessage);
-                } else {
-                    ctx.status(400);
-                }
-            } else {
-                ctx.status(400);
-            }
-        });
-
-        // Get messages by user ID
-        app.get("/accounts/{account_id}/messages", ctx -> {
-            int accountId = Integer.parseInt(ctx.pathParam("account_id"));
-            ctx.json(messageService.getMessagesByUserId(accountId));
-        });
+        app.post("/register", this::createAccountHandler);
+        app.post("/login", this::loginHandler);
+        app.post("/messages", this::createMessageHandler);
+        app.get("/messages", this::getAllMessagesHandler);
+        app.get("/messages/{message_id}", this::getMessageByIdHandler);
+        app.delete("/messages/{message_id}", this::deleteMessageHandler);
+        app.patch("/messages/{message_id}", this::updateMessageHandler);
+        app.get("/accounts/{account_id}/messages", this::getMessagesByUserIdHandler);
         return app;
     }
 
@@ -134,5 +54,87 @@ public class SocialMediaController {
     private void exampleHandler(Context context) {
         System.out.println("Request received!");
         context.json("sample text");
+    }
+
+    private void createAccountHandler(Context ctx) throws SQLException{
+        Account account = ctx.bodyAsClass(Account.class);
+        Account newAccount = accountService.createAccount(account);
+        if (newAccount != null) {
+            ctx.json(newAccount);
+        } else {
+            ctx.status(400);
+        }
+    }
+
+    private void loginHandler(Context ctx) throws SQLException{
+        Account loginRequest = ctx.bodyAsClass(Account.class);
+        Account account = accountService.login(loginRequest.getUsername(), loginRequest.getPassword());
+        if (account != null) {
+            ctx.json(account);
+        } else {
+            ctx.status(401);
+        }
+    }
+
+    private void createMessageHandler(Context ctx){
+        try {
+            Message message = ctx.bodyAsClass(Message.class);
+            Message createdMessage = messageService.createMessage(message);
+    
+            if (createdMessage == null) {
+                ctx.status(400); // Bad request if validation or creation fails;
+            } else {
+                ctx.status(200); // Success
+                ctx.json(createdMessage); // Return created message
+            }
+        } catch (Exception e) {
+            e.printStackTrace(); // Print stack trace for debugging
+            ctx.status(500).result("Internal server error");
+        }
+    }
+
+    private void getAllMessagesHandler(Context ctx) throws SQLException{
+        ctx.json(messageService.getAllMessages());
+    }
+
+    private void getMessageByIdHandler(Context ctx) throws SQLException{
+        int messageId = Integer.parseInt(ctx.pathParam("message_id"));
+        Message message = messageService.getMessageById(messageId);
+        if (message != null) {
+            ctx.json(message);
+        } else {
+            ctx.status(200).json("");
+        }
+    }
+
+    private void deleteMessageHandler(Context ctx) throws SQLException{
+        int messageId = Integer.parseInt(ctx.pathParam("message_id"));
+        Message deletedMessage = messageService.getMessageById(messageId);
+        if (deletedMessage != null && messageService.deleteMessage(messageId)) {
+            ctx.json(deletedMessage);
+        } else {
+            ctx.json("");
+        }
+    }
+
+    private void updateMessageHandler(Context ctx) throws SQLException{
+        int messageId = Integer.parseInt(ctx.pathParam("message_id"));
+        Message existingMessage = messageService.getMessageById(messageId);
+        if (existingMessage != null) {
+            String newText = ctx.bodyAsClass(Message.class).getMessage_text();
+            if (messageService.updateMessage(messageId, newText)) {
+                existingMessage.setMessage_text(newText);
+                ctx.json(existingMessage);
+            } else {
+                ctx.status(400);
+            }
+        } else {
+            ctx.status(400);
+        }
+    }
+
+    private void getMessagesByUserIdHandler(Context ctx) throws SQLException{
+        int accountId = Integer.parseInt(ctx.pathParam("account_id"));
+        ctx.json(messageService.getMessagesByUserId(accountId));
     }
 }
